@@ -4,13 +4,17 @@ from sklearn.model_selection import train_test_split
 from lightgbm import LGBMClassifier
 from sklearn.metrics import roc_auc_score, fbeta_score
 from sklearn.metrics import precision_score, recall_score
+from pathlib import Path
+
+script_dir = Path(__file__).parent
+project_dir = script_dir.parent
 
 # 讀資料
-X = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\X_processed.csv")
-y = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\y_processed.csv")["PerStatus"]
+X = pd.read_csv(project_dir / "asset" / "X_processed.csv")
+y = pd.read_csv(project_dir / "asset" / "y_processed.csv")["PerStatus"]
 
-X_test = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\X_test_processed.csv")
-test_id = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\test_id.csv")
+X_test = pd.read_csv(project_dir / "asset" / "X_test_processed.csv")
+test_id = pd.read_csv(project_dir / "asset" / "test_id.csv")
 # 切 train / valid
 X_train, X_valid, y_train, y_valid = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
@@ -58,6 +62,7 @@ pred_label = (pred_valid_proba >= best_th).astype(int)
 
 print("Precision:", precision_score(y_valid, pred_label))
 print("Recall:", recall_score(y_valid, pred_label))
+print("Accuracy:", (pred_label == y_valid).mean())
 
 submission.to_csv("submission.csv", index=False, encoding="utf-8-sig")
 print("submission.csv 已輸出")

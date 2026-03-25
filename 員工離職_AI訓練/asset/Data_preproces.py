@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 # 資料問題
 # 1. 不平衡，太多未離職，需要再資料或是模型上去做加權
@@ -8,9 +9,13 @@ import numpy as np
 # =========================
 # 1. 讀資料
 # =========================
-train = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\data\train.csv")
-test = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\data\test.csv")
-season = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\data\season.csv")
+
+script_dir = Path(__file__).parent
+project_dir = script_dir.parent
+
+train = pd.read_csv(project_dir / "data" / "train.csv")
+test = pd.read_csv(project_dir / "data" / "test.csv")
+season = pd.read_csv(project_dir / "data" / "season.csv")
 
 # 標記資料來源
 train["is_train"] = 1
@@ -56,59 +61,15 @@ all_df = all_df.merge(season_year, on=["PerNo", "yyyy"], how="left")
 # =========================
 all_df = all_df.sort_values(["PerNo", "yyyy"]).reset_index(drop=True)
 
-
-# 5. 歷史特徵
-lag_cols = [
-    "專案時數", "專案總數", "訓練時數A", "訓練時數B", "訓練時數C",
-    "生產總額", "榮譽數", "升遷速度",
-    "近三月請假數A", "近一年請假數A",
-    "近三月請假數B", "近一年請假數B",
-    "出差數A", "出差數B",
-    "年度績效等級A", "年度績效等級B", "年度績效等級C",
-    "加班數_sum", "加班數_mean",
-    "請假數A_sum", "請假數B_sum",
-    "出差數A_sum", "出差數B_sum"
-]
-
-for col in lag_cols:
-    if col in all_df.columns:
-        prev = all_df.groupby("PerNo")[col].shift(1)
-        all_df[f"{col}_lag1"] = prev
-        all_df[f"{col}_diff1"] = all_df[col] - prev
-
-# =========================
-# 6. rolling / 累積特徵
-# =========================
-rolling_cols = ["加班數_sum", "請假數A_sum", "請假數B_sum", "出差數A_sum", "出差數B_sum"]
-
-for col in rolling_cols:
-    if col in all_df.columns:
-        all_df[f"{col}_rolling2_mean"] = (
-            all_df.groupby("PerNo")[col]
-            .transform(lambda s: s.shift(1).rolling(2, min_periods=1).mean())
-        )
-        all_df[f"{col}_cumsum_prev"] = (
-            all_df.groupby("PerNo")[col]
-            .transform(lambda s: s.shift(1).cumsum())
-        )
-
-# =========================
-# 7. 比例特徵
-# =========================
-if "加班數_sum" in all_df.columns and "請假數A_sum" in all_df.columns:
-    all_df["加班請假比_A"] = all_df["加班數_sum"] / (all_df["請假數A_sum"] + 1)
-
-if "加班數_sum" in all_df.columns and "請假數B_sum" in all_df.columns:
-    all_df["加班請假比_B"] = all_df["加班數_sum"] / (all_df["請假數B_sum"] + 1)
-
-if "榮譽數" in all_df.columns and "專案總數" in all_df.columns:
-    all_df["每專案榮譽數"] = all_df["榮譽數"] / (all_df["專案總數"] + 1)
-
+# 需要特別做計算的是[]
 
 # =========================
 # 8. 缺失值處理
 # 只用 train 的統計量補值，避免資料洩漏
 # =========================
+# 刪掉不必要的欄位
+all_df.drop(columns=["歸屬部門","廠區代碼","工作地點","當前專案角色"], inplace=True)
+
 train_part = all_df[all_df["is_train"] == 1].copy()
 test_part = all_df[all_df["is_train"] == 0].copy()
 
