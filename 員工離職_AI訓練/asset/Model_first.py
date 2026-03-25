@@ -3,14 +3,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from lightgbm import LGBMClassifier
 from sklearn.metrics import roc_auc_score, fbeta_score
+from sklearn.metrics import precision_score, recall_score
 
 # 讀資料
-X = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\asset\X_processed.csv")
-y = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\asset\y_processed.csv").squeeze()
+X = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\X_processed.csv")
+y = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\y_processed.csv")["PerStatus"]
 
-X_test = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\asset\X_test_processed.csv")
-test_id = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\asset\test_id.csv")
-
+X_test = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\X_test_processed.csv")
+test_id = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\asset\test_id.csv")
 # 切 train / valid
 X_train, X_valid, y_train, y_valid = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
@@ -22,17 +22,13 @@ model = LGBMClassifier(
     learning_rate=0.05,
     num_leaves=31,
     random_state=42,
-    class_weight="balanced"
+    class_weight={0:1, 1:10} #資料不平均，調整權重
 )
 
 model.fit(X_train, y_train)
 
 # validation 機率
 pred_valid_proba = model.predict_proba(X_valid)[:, 1]
-
-# 先看 AUC（可當參考）
-auc = roc_auc_score(y_valid, pred_valid_proba)
-print("AUC:", auc)
 
 # 找最佳 threshold（針對 F-beta, beta=1.5）
 best_th = 0.5
@@ -57,6 +53,11 @@ submission = pd.DataFrame({
     "PerNo": test_id["PerNo"],
     "PerStatus": pred_test_label
 })
+
+pred_label = (pred_valid_proba >= best_th).astype(int)
+
+print("Precision:", precision_score(y_valid, pred_label))
+print("Recall:", recall_score(y_valid, pred_label))
 
 submission.to_csv("submission.csv", index=False, encoding="utf-8-sig")
 print("submission.csv 已輸出")

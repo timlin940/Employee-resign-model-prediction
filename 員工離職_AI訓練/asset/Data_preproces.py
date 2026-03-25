@@ -1,14 +1,16 @@
 import pandas as pd
 import numpy as np
 
-# 資料不平衡，未處理
+# 資料問題
+# 1. 不平衡，太多未離職，需要再資料或是模型上去做加權
+# 2. 資料沒有正規化、標準化
 
 # =========================
 # 1. 讀資料
 # =========================
-train = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\data\train.csv")
-test = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\data\test.csv")
-season = pd.read_csv(r"C:\Users\aa090\OneDrive\桌面\員工離職_AI訓練\data\season.csv")
+train = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\data\train.csv")
+test = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\data\test.csv")
+season = pd.read_csv(r"C:\Users\Tim\Desktop\Employee-resign-model-prediction\員工離職_AI訓練\data\season.csv")
 
 # 標記資料來源
 train["is_train"] = 1
@@ -54,9 +56,8 @@ all_df = all_df.merge(season_year, on=["PerNo", "yyyy"], how="left")
 # =========================
 all_df = all_df.sort_values(["PerNo", "yyyy"]).reset_index(drop=True)
 
-# =========================
+
 # 5. 歷史特徵
-# =========================
 lag_cols = [
     "專案時數", "專案總數", "訓練時數A", "訓練時數B", "訓練時數C",
     "生產總額", "榮譽數", "升遷速度",
@@ -102,6 +103,7 @@ if "加班數_sum" in all_df.columns and "請假數B_sum" in all_df.columns:
 
 if "榮譽數" in all_df.columns and "專案總數" in all_df.columns:
     all_df["每專案榮譽數"] = all_df["榮譽數"] / (all_df["專案總數"] + 1)
+
 
 # =========================
 # 8. 缺失值處理
