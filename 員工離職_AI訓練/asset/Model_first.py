@@ -6,15 +6,17 @@ from sklearn.metrics import roc_auc_score, fbeta_score
 from sklearn.metrics import precision_score, recall_score
 from pathlib import Path
 
+# 根據題目 recall 比 precision 更重要，所以選擇 F-beta, beta=1.5 作為評分指標
+
 script_dir = Path(__file__).parent
 project_dir = script_dir.parent
 
 # 讀資料
-X = pd.read_csv(project_dir / "asset" / "X_processed.csv")
-y = pd.read_csv(project_dir / "asset" / "y_processed.csv")["PerStatus"]
+X = pd.read_csv(project_dir / "asset" / "output_data" / "X_processed.csv")
+y = pd.read_csv(project_dir / "asset" / "output_data" / "y_processed.csv")["PerStatus"]
 
-X_test = pd.read_csv(project_dir / "asset" / "X_test_processed.csv")
-test_id = pd.read_csv(project_dir / "asset" / "test_id.csv")
+X_test = pd.read_csv(project_dir / "asset" / "output_data" / "X_test_processed.csv")
+test_id = pd.read_csv(project_dir / "asset" / "output_data" / "test_id.csv")
 # 切 train / valid
 X_train, X_valid, y_train, y_valid = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
@@ -23,8 +25,8 @@ X_train, X_valid, y_train, y_valid = train_test_split(
 # 模型
 model = LGBMClassifier(
     n_estimators=300,
-    learning_rate=0.05,
-    num_leaves=31,
+    learning_rate=0.01,
+    num_leaves=30,
     random_state=42,
     class_weight={0:1, 1:10} #資料不平均，調整權重
 )
@@ -64,5 +66,19 @@ print("Precision:", precision_score(y_valid, pred_label))
 print("Recall:", recall_score(y_valid, pred_label))
 print("Accuracy:", (pred_label == y_valid).mean())
 
-submission.to_csv("submission.csv", index=False, encoding="utf-8-sig")
+submission.to_csv("output_data/submission.csv", index=False, encoding="utf-8-sig")
 print("submission.csv 已輸出")
+
+
+# 過濾噪音（這個會直接提升 precision）
+
+# 你現在所有特徵都丟進去，其實會：
+
+# 增加 FP（降低 precision）
+
+# 做法：看 feature importance
+import pandas as pd
+
+importance = model.feature_importances_
+feat_imp = pd.Series(importance, index=X.columns).sort_values(ascending=False)
+feat_imp.to_csv("output_data/feature_importance.csv", encoding="utf-8-sig")
