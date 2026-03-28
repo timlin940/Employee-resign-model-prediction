@@ -26,9 +26,9 @@ X_train, X_valid, y_train, y_valid = train_test_split(
 model = LGBMClassifier(
     n_estimators=300,
     learning_rate=0.01,
-    num_leaves=30,
+    num_leaves=32,
     random_state=42,
-    class_weight={0:1, 1:10} #資料不平均，調整權重
+    class_weight={0:1, 1:15} #資料不平均，調整權重
 )
 
 model.fit(X_train, y_train)
@@ -66,8 +66,8 @@ print("Precision:", precision_score(y_valid, pred_label))
 print("Recall:", recall_score(y_valid, pred_label))
 print("Accuracy:", (pred_label == y_valid).mean())
 
-submission.to_csv("output_data/submission.csv", index=False, encoding="utf-8-sig")
-print("submission.csv 已輸出")
+submission.to_csv("output_data/answer.csv", index=False, encoding="utf-8-sig")
+print("answer.csv 已輸出")
 
 
 # 過濾噪音（這個會直接提升 precision）

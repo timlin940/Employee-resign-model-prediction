@@ -108,18 +108,43 @@ test_part[num_cols] = test_part[num_cols].fillna(fill_values)
 # =========================
 target = "PerStatus"
 drop_cols = ["PerNo", "yyyy", "is_train", target,
-            "請假數B_mean",
-            "出差數B_mean",
-            "出差數A_mean",
-            "加班數_mean",
-            "請假數A_mean",
-            "加班數_mean_prev1",
-            "加班數_mean_diff1"
+             "出差數A_mean", "出差數B_mean", "請假數A_mean", "請假數B_mean"
     ]
 
-# ===================
-# 暴力審查資料:手動篩選我個人認為敏感的數據
-# ===================
+cat_cols = ["廠區代碼", "工作地點", "歸屬部門"]
+
+for col in cat_cols:
+    # 用 train 算平均（避免 data leakage）
+    mapping = train_part.groupby(col)["PerStatus"].mean()
+
+    # 套用到 train / test
+    train_part[f"{col}_enc"] = train_part[col].map(mapping)
+    test_part[f"{col}_enc"] = test_part[col].map(mapping)
+
+    # 如果 test 出現沒看過的類別 → 用整體平均補
+    global_mean = train_part["PerStatus"].mean()
+    train_part[f"{col}_enc"].fillna(global_mean, inplace=True)
+    test_part[f"{col}_enc"].fillna(global_mean, inplace=True)
+print("廠區代碼種類數:", train_part["廠區代碼"].nunique())
+print("工作地點種類數:", train_part["工作地點"].nunique())
+print("歸屬部門種類數:", train_part["歸屬部門"].nunique())
+
+dept_rate = (
+    train_part.groupby("歸屬部門")["PerStatus"]
+    .agg(["sum", "count", "mean"])
+    .rename(columns={
+        "sum": "離職人數",
+        "count": "總人數",
+        "mean": "離職率"
+    })
+    .sort_values("離職率", ascending=False)
+)
+
+print(dept_rate.head(10))
+
+
+train_part.drop(columns=cat_cols, inplace=True, errors="ignore")
+test_part.drop(columns=cat_cols, inplace=True, errors="ignore")
 
 X = train_part.drop(columns=drop_cols, errors="ignore")
 y = train_part[target]
