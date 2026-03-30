@@ -18,7 +18,7 @@
 - **Model**: LGBMClassifier
 
 ## 提升精準度要點
-- 由於訓練資料雜亂，需要進行分類one-hot(廠區代碼、歸屬部門)、資料特徵提取(前幾年的績效變化、請假率變化)，並且題目計算方式是 F beta score [1]，beta = 1.5，也就是重視Recall(真正離職員工中成功預測到的離職) > Precision(預測離職中真正離職的數據)。
+- 由於訓練資料雜亂，需要進行分類Target Encoding(廠區代碼、歸屬部門)、資料特徵提取(前幾年的績效變化、請假率變化)，並且題目計算方式是 F beta score [1]，beta = 1.5，也就是重視Recall(真正離職員工中成功預測到的離職) > Precision(預測離職中真正離職的數據)。
 
 ## 題目來源
 https://www.aidea-web.tw/topic/2f3ee780-855b-4ea7-8fc8-61f26447af1d
